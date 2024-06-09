@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
 import csv
