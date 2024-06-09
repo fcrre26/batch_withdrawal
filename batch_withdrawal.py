@@ -104,7 +104,7 @@ if __name__ == "__main__":
     )
 
     try:
-        asyncio.run(main())
+        asyncio.get_event_loop().run_until_complete(main())
     except KeyboardInterrupt:
         print("用户终止程序运行")
     except Exception as e:
