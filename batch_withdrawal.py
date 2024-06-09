@@ -15,22 +15,52 @@ def install_dependency(package):
         print("需要安装 {} 依赖,正在安装...".format(package))
         subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", package])
 
-def main():
-    # 判断系统版本并安装依赖
+def upgrade_dependency(package):
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package])
+    except subprocess.CalledProcessError:
+        print("升级 {} 依赖失败".format(package))
+
+def detect_os():
     system = platform.system()
     if system == 'Linux':
-        install_dependency('gate_api')
+        distro = platform.linux_distribution()[0].lower()
+        if 'centos' in distro:
+            return 'centos'
+        elif 'ubuntu' in distro:
+            return 'ubuntu'
+        elif 'debian' in distro:
+            return 'debian'
+        else:
+            return 'linux'
     else:
-        print("不支持的系统: {}".format(system))
-        return
+        return 'windows'
 
-    print(f"您正在使用 Linux 系统,需要安装以下依赖: gate_api")
-    input("按回车键继续...")
+def install_system_dependencies(os_type):
+    if os_type == 'centos':
+        subprocess.check_call(['sudo', 'yum', 'install', '-y', 'python3', 'python3-pip'])
+    elif os_type == 'ubuntu' or os_type == 'debian':
+        subprocess.check_call(['sudo', 'apt-get', 'update'])
+        subprocess.check_call(['sudo', 'apt-get', 'install', '-y', 'python3', 'python3-pip'])
+
+def main():
+    # 检测操作系统
+    os_type = detect_os()
+    print(f"当前操作系统类型: {os_type}")
+
+    # 安装系统依赖
+    print("正在安装系统依赖...")
+    install_system_dependencies(os_type)
+
+    # 安装 Python 依赖
+    print("正在安装 Python 依赖...")
+    install_dependency('gate_api')
+    upgrade_dependency('gate_api')
 
     # 获取用户输入
     key = input("请输入您的 API key: ")
     secret = input("请输入您的 API secret: ")
-    chain = input("请输入主链类型 (例如 BTC、ETH、MATIC)): ")
+    chain = input("请输入主链类型 (例如 BTC、ETH、Polygon): ")
     currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
     address_amount_pairs = input("请输入提币地址和数量(以逗号分隔,一行一个,例如: \n0x123...,0.1\n0x456...,0.2): ").strip().split("\n")
     interval = int(input("请输入提币间隔时间(秒): "))
