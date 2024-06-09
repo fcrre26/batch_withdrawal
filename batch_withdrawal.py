@@ -21,7 +21,7 @@ def main():
     if system == 'Linux':
         install_dependency('gate_api')
     else:
-        print(f"不支持的系统: {system}")
+        print("不支持的系统: {}".format(system))
         return
 
     print(f"您正在使用 Linux 系统,需要安装以下依赖: gate_api")
