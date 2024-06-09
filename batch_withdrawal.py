@@ -60,7 +60,7 @@ def main():
     # 获取用户输入
     key = input("请输入您的 API key: ")
     secret = input("请输入您的 API secret: ")
-    chain = input("请输入主链类型 (例如 BTC、ETH、Polygon): ")
+    chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
     currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
     address_amount_pairs = input("请输入提币地址和数量(以逗号分隔,一行一个,例如: \n0x123...,0.1\n0x456...,0.2): ").strip().split("\n")
     interval = int(input("请输入提币间隔时间(秒): "))
