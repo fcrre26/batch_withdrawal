@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import sys
 import subprocess
+import random
 
 def encrypt(text):
     # 加密函数
@@ -25,7 +26,7 @@ class Config:
         self.retry_count = retry_count
         self.retry_delay = retry_delay
 
-def main():
+async def main():
     # 检查并安装依赖库
     dependencies = ['dotenv', 'logging']
     for dependency in dependencies:
@@ -50,16 +51,19 @@ def main():
             api_key = input("请输入您的 API key: ")
             api_secret = input("请输入您的 API secret: ")
 
+            # 将 API 信息保存到环境变量
+            os.environ["API_KEY"] = api_key
+            os.environ["API_SECRET"] = api_secret
+
     chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
     currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
     interval = int(input("请输入提现间隔时间(秒): "))
 
     withdrawal_infos = []
-    address_amount_pairs = input("请输入提现地址、数量和间隔时间(以逗号分隔,一行一个,例如: \n10,0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n15,0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ").strip().split("\n")
+    address_amount_pairs = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ").strip().split("\n")
     for pair in address_amount_pairs:
-        interval_str, address, amount = pair.split(",")
+        address, amount = pair.split(",")
         withdrawal_infos.append({
-            "interval": int(interval_str.strip()),
             "address": address.strip(),
             "amount": float(amount.strip())
         })
@@ -83,11 +87,10 @@ def main():
 
     # 测试提现操作
     test_withdrawal_info = {
-        "interval": 10,
         "address": "0x1234567890abcdef",
         "amount": 10.5
     }
-    success = do_withdrawal(config, test_withdrawal_info)
+    success = await do_withdrawal(config, test_withdrawal_info)
     if success:
         print("提现测试成功")
     else:
@@ -95,12 +98,14 @@ def main():
 
     # 执行提现操作
     for withdrawal_info in withdrawal_infos:
-        success = do_withdrawal(config, withdrawal_info)
+        random_interval = random.uniform(config.interval, config.interval + 20)
+        print(f"链类型: {chain}, 币种: {currency}, 地址: {withdrawal_info['address']}, 数量: {withdrawal_info['amount']}, 间隔时间: {random_interval:.2f} 秒")
+        success = await do_withdrawal(config, withdrawal_info)
         if success:
-            logging.info(f"提现成功: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {withdrawal_info['interval']}秒")
+            logging.info(f"提现成功: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {random_interval:.2f}秒")
         else:
-            logging.error(f"提现失败: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {withdrawal_info['interval']}秒")
-        time.sleep(withdrawal_info["interval"])
+            logging.error(f"提现失败: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {random_interval:.2f}秒")
+        await asyncio.sleep(random_interval)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
