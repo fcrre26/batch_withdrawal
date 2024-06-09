@@ -56,24 +56,6 @@ def main():
 
         api_client = gate_api.ApiClient(configuration)
         api_instance = gate_api.WithdrawalApi(api_client)
-        balance_api = gate_api.BalanceApi(api_client)
-
-        # 测试 API 连接
-        try:
-            balance = balance_api.list_balances(currency=currency)[0]
-            print(f"账户 {currency} 余额: {balance.available}")
-        except (ApiException, GateApiException) as e:
-            print(f"连接 API 时出现异常: {e}")
-            return
-
-        # 验证提币地址和数量
-        for address_amount in address_amount_pairs:
-            address, amount = address_amount.split(",")
-            address = address.strip()
-            amount = float(amount.strip())
-            if amount > float(balance.available):
-                print(f"提币数量 {amount} {currency} 超过账户可用余额 {balance.available} {currency}")
-                return
 
         # 将提现记录写入文件
         filename = f"withdrawal_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
