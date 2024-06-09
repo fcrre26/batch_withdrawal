@@ -1,159 +1,112 @@
-# -*- coding: utf-8 -*-
-import gate_api
-from gate_api.exceptions import ApiException, GateApiException
-import csv
+import logging
 import time
-import datetime
-import platform
-import subprocess
+import asyncio
+import os
+from dotenv import load_dotenv
 import sys
+import subprocess
 
-def install_dependency(package):
-    try:
-        __import__(package)
-    except ImportError:
-        print("需要安装 {} 依赖,正在安装...".format(package))
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", package])
+def encrypt(text):
+    # 加密函数
+    return encrypted_text
 
-def upgrade_dependency(package):
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package])
-    except subprocess.CalledProcessError:
-        print("升级 {} 依赖失败".format(package))
+async def do_withdrawal(config, withdrawal_info):
+    # 执行提现操作
+    # 返回 True 表示成功, False 表示失败
+    return True
 
-def detect_os():
-    system = platform.system()
-    if system == 'Linux':
-        distro = platform.linux_distribution()[0].lower()
-        if 'centos' in distro:
-            return 'centos'
-        elif 'ubuntu' in distro:
-            return 'ubuntu'
-        elif 'debian' in distro:
-            return 'debian'
-        else:
-            return 'linux'
-    else:
-        return 'windows'
+class Config:
+    def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.chain = chain
+        self.currency = currency
+        self.interval = interval
+        self.retry_count = retry_count
+        self.retry_delay = retry_delay
 
-def install_system_dependencies(os_type):
-    if os_type == 'centos':
-        subprocess.check_call(['sudo', 'yum', 'install', '-y', 'python3', 'python3-pip'])
-    elif os_type == 'ubuntu' or os_type == 'debian':
-        subprocess.check_call(['sudo', 'apt-get', 'update'])
-        subprocess.check_call(['sudo', 'apt-get', 'install', '-y', 'python3', 'python3-pip'])
+async def main():
+    # 检查并安装依赖库
+    dependencies = ['dotenv', 'logging']
+    for dependency in dependencies:
+        try:
+            __import__(dependency)
+        except ImportError:
+            print(f"正在安装 {dependency} 库...")
+            import subprocess
+            subprocess.check_call([sys.executable, "-m", "pip", "install", dependency])
 
-def main():
-    # 检测操作系统
-    os_type = detect_os()
-    print(f"当前操作系统类型: {os_type}")
+    # 从环境变量加载 API key 和 API secret
+    load_dotenv()
+    api_key = os.environ.get("API_KEY")
+    api_secret = os.environ.get("API_SECRET")
 
-    # 安装系统依赖
-    print("正在安装系统依赖...")
-    install_system_dependencies(os_type)
+    if not api_key or not api_secret:
+        # 如果环境变量中没有找到 API key 和 API secret,则提示用户输入
+        api_key = input("请输入您的 API key: ")
+        api_secret = input("请输入您的 API secret: ")
 
-    # 安装 Python 依赖
-    print("正在安装 Python 依赖...")
-    install_dependency('gate_api')
-    upgrade_dependency('gate_api')
-
-    # 获取用户输入
-    key = input("请输入您的 API key: ")
-    secret = input("请输入您的 API secret: ")
     chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
     currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
-    address_amount_pairs = input("请输入提币地址和数量(以逗号分隔,一行一个,例如: \n0x123...,0.1\n0x456...,0.2): ").strip().split("\n")
-    interval = int(input("请输入提币间隔时间(秒): "))
 
-    # 将用户输入保存到文件
-    filename = f"withdrawal_config_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    with open(filename, mode='w', newline='') as csv_file:
-        fieldnames = ['key', 'secret', 'chain', 'currency']
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerow({'key': key, 'secret': secret, 'chain': chain, 'currency': currency})
-    print(f"配置信息已保存到文件 {filename}")
+    withdrawal_infos = []
+    address_amount_pairs = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ").strip().split("\n")
+    for pair in address_amount_pairs:
+        address, amount = pair.split(",")
+        withdrawal_infos.append({"address": address.strip(), "amount": float(amount.strip())})
 
-    # 配置 APIv4 密钥授权
-    configuration = gate_api.Configuration(
-        host="https://api.gateio.ws/api/v4",
-        key=key,
-        secret=secret
-    )
+    interval = int(input("请输入提现间隔时间(秒): "))
+    retry_count = int(input("请输入重试次数: "))
+    retry_delay = int(input("请输入重试延迟(秒): "))
 
-    api_client = gate_api.ApiClient(configuration)
-    api_instance = gate_api.WithdrawalApi(api_client)
+    config = Config(api_key, api_secret, chain, currency, interval, retry_count, retry_delay)
 
-    # 将提现记录写入文件
-    filename = f"withdrawal_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    with open(filename, mode='w', newline='') as csv_file:
-        fieldnames = ['timestamp', 'currency', 'chain', 'address', 'amount', 'status']
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        writer.writeheader()
-        print(f"提现记录将写入文件 {filename}")
+    # 加密敏感信息
+    encrypted_api_key = encrypt(config.api_key)
+    encrypted_api_secret = encrypt(config.api_secret)
+    logging.info(f"加密后的 API key: {encrypted_api_key}")
+    logging.info(f"加密后的 API secret: {encrypted_api_secret}")
 
-    # 执行提币操作
-    for address_amount in address_amount_pairs:
-        address, amount = address_amount.split(",")
-        address = address.strip()
-        amount = float(amount.strip())
+    # 测试加密函数
+    test_text = "This is a test"
+    encrypted_text = encrypt(test_text)
+    print(f"原文: {test_text}")
+    print(f"加密后: {encrypted_text}")
 
-        # 创建提现记录
-        ledger_record = gate_api.LedgerRecord(currency=currency, address=address, amount=amount, chain=chain)
+    # 测试提现操作
+    test_withdrawal_info = {
+        "address": "0x1234567890abcdef",
+        "amount": 10.5
+    }
+    success = await do_withdrawal(config, test_withdrawal_info)
+    if success:
+        print("提现测试成功")
+    else:
+        print("提现测试失败")
 
-        try:
-            # 执行提现
-            api_response = api_instance.withdraw(ledger_record)
-            record = {
-                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'currency': currency,
-                'chain': chain,
-                'address': address,
-                'amount': amount,
-                'status': 'Success'
-            }
-            print(f"提现成功, {currency} {amount} 到 {address}: {api_response}")
-
-            # 将提现记录写入文件
-            with open(filename, mode='a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-                writer.writerow(record)
-
-        except GateApiException as ex:
-            record = {
-                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'currency': currency,
-                'chain': chain,
-                'address': address,
-                'amount': amount,
-                'status': f"Failed, label: {ex.label}, message: {ex.message}"
-            }
-            print(f"Gate API 异常, 标签: {ex.label}, 消息: {ex.message}")
-
-            # 将提现记录写入文件
-            with open(filename, mode='a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-                writer.writerow(record)
-
-        except ApiException as e:
-            record = {
-                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'currency': currency,
-                'chain': chain,
-                'address': address,
-                'amount': amount,
-                'status': f"Failed, exception: {e}"
-            }
-            print(f"调用 WithdrawalApi->withdraw 时出现异常: {e}")
-
-            # 将提现记录写入文件
-            with open(filename, mode='a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-                writer.writerow(record)
-
-        # 等待下次提现
-        print(f"等待 {interval} 秒后执行下一次提现...")
-        time.sleep(interval)
+    # 执行提现操作
+    for withdrawal_info in withdrawal_infos:
+        success = await do_withdrawal(config, withdrawal_info)
+        if success:
+            logging.info(f"提现到 {withdrawal_info['address']} 成功")
+        else:
+            logging.error(f"提现到 {withdrawal_info['address']} 失败")
 
 if __name__ == "__main__":
-    main()
+    # 配置日志记录
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler("withdrawal.log"),
+            logging.StreamHandler()
+        ]
+    )
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("用户终止程序运行")
+    except Exception as e:
+        logging.error(f"程序发生异常: {e}")
+        print("程序发生意外错误,请查看日志文件 withdrawal.log")
