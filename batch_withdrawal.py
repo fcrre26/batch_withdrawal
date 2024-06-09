@@ -31,25 +31,42 @@ async def main():
     # 设置日志配置
     logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-    # 读取环境变量
-    load_dotenv()
-    api_key = os.getenv("API_KEY")
-    api_secret = os.getenv("API_SECRET")
-    chain = os.getenv("CHAIN")
-    currency = os.getenv("CURRENCY")
-    interval = float(os.getenv("INTERVAL"))
-    retry_count = int(os.getenv("RETRY_COUNT"))
-    retry_delay = float(os.getenv("RETRY_DELAY"))
+    # 从用户输入获取配置信息
+    if 'api_key' in globals() and 'api_secret' in globals():
+        print("检测到已经存在 API 信息, 将继续使用.")
+    else:
+        # 从环境变量加载 API key 和 API secret
+        load_dotenv()
+        api_key = os.environ.get("API_KEY")
+        api_secret = os.environ.get("API_SECRET")
+
+        if not api_key or not api_secret:
+            # 如果环境变量中没有找到 API key 和 API secret,则提示用户输入
+            api_key = input("请输入您的 API key: ")
+            api_secret = input("请输入您的 API secret: ")
+
+            # 将 API 信息保存到环境变量
+            os.environ["API_KEY"] = api_key
+            os.environ["API_SECRET"] = api_secret
+
+    chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
+    currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
+    interval = int(input("请输入提现间隔时间(秒): "))
+
+    withdrawal_infos = []
+    address_amount_pairs = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ").strip().split("\n")
+    for pair in address_amount_pairs:
+        address, amount = pair.split(",")
+        withdrawal_infos.append({
+            "address": address.strip(),
+            "amount": float(amount.strip())
+        })
+
+    retry_count = int(input("请输入重试次数: "))
+    retry_delay = int(input("请输入重试延迟(秒): "))
 
     # 创建配置对象
     config = Config(api_key, api_secret, chain, currency, interval, retry_count, retry_delay)
-
-    # 模拟提现信息列表
-    withdrawal_infos = [
-        {"address": "0x123...", "amount": "0.1"},
-        {"address": "0x456...", "amount": "0.2"},
-        {"address": "0x789...", "amount": "0.3"},
-    ]
 
     # 执行提现操作
     for withdrawal_info in withdrawal_infos:
