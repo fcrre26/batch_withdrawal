@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import sys
 import subprocess
 import random
+import platform
 
 def encrypt(text):
     # 加密函数
@@ -25,6 +26,25 @@ class Config:
         self.interval = interval
         self.retry_count = retry_count
         self.retry_delay = retry_delay
+
+def check_and_upgrade_python():
+    # 获取当前Python版本
+    current_version = sys.version_info.major
+    
+    # 检查Python版本是否满足要求(3.9或更高)
+    if current_version < 3 or current_version < 9:
+        print("您的Python版本过低,需要升级到3.9或更高版本。")
+        
+        # 自动升级Python版本
+        if platform.system() == "Windows":
+            subprocess.run(["python", "-m", "pip", "install", "--upgrade", "pip"])
+            subprocess.run(["python", "-m", "pip", "install", "python"])
+        else:
+            subprocess.run(["sudo", "apt-get", "update"])
+            subprocess.run(["sudo", "apt-get", "install", "python3.9"])
+            
+        print("Python已成功升级,请重新运行脚本。")
+        sys.exit()
 
 async def main():
     # 检查并安装依赖库
@@ -108,4 +128,5 @@ async def main():
         await asyncio.sleep(random_interval)
 
 if __name__ == "__main__":
+    check_and_upgrade_python()
     asyncio.run(main())
