@@ -3,8 +3,29 @@ from gate_api.exceptions import ApiException, GateApiException
 import csv
 import time
 import datetime
+import platform
+import subprocess
+import sys
+
+def install_dependency(package):
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"需要安装 {package} 依赖,正在安装...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", package])
 
 def main():
+    # 判断系统版本并安装依赖
+    system = platform.system()
+    if system == 'Linux':
+        install_dependency('gate_api')
+    else:
+        print(f"不支持的系统: {system}")
+        return
+
+    print(f"您正在使用 Linux 系统,需要安装以下依赖: gate_api")
+    input("按回车键继续...")
+
     # 获取用户输入
     key = input("请输入您的 API key: ")
     secret = input("请输入您的 API secret: ")
