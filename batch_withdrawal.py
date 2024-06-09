@@ -25,7 +25,7 @@ class Config:
         self.retry_count = retry_count
         self.retry_delay = retry_delay
 
-async def main():
+def main():
     # 检查并安装依赖库
     dependencies = ['dotenv', 'logging']
     for dependency in dependencies:
@@ -87,7 +87,7 @@ async def main():
         "address": "0x1234567890abcdef",
         "amount": 10.5
     }
-    success = await do_withdrawal(config, test_withdrawal_info)
+    success = do_withdrawal(config, test_withdrawal_info)
     if success:
         print("提现测试成功")
     else:
@@ -95,12 +95,12 @@ async def main():
 
     # 执行提现操作
     for withdrawal_info in withdrawal_infos:
-        success = await do_withdrawal(config, withdrawal_info)
+        success = do_withdrawal(config, withdrawal_info)
         if success:
             logging.info(f"提现成功: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {withdrawal_info['interval']}秒")
         else:
             logging.error(f"提现失败: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {withdrawal_info['interval']}秒")
-        await asyncio.sleep(withdrawal_info["interval"])
+        time.sleep(withdrawal_info["interval"])
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
