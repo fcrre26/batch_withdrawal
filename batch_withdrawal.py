@@ -30,109 +30,126 @@ def main():
     # 获取用户输入
     key = input("请输入您的 API key: ")
     secret = input("请输入您的 API secret: ")
-    chain = input("请输入主链类型 (例如 BTC、ETH、Polygon): ")
-    currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
-    address_amount_pairs = input("请输入提币地址和数量(以逗号分隔,一行一个,例如: \n0x123...,0.1\n0x456...,0.2): ").strip().split("\n")
-    interval = int(input("请输入提币间隔时间(秒): "))
 
-    # 配置 APIv4 密钥授权
-    configuration = gate_api.Configuration(
-        host="https://api.gateio.ws/api/v4",
-        key=key,
-        secret=secret
-    )
-
-    api_client = gate_api.ApiClient(configuration)
-    api_instance = gate_api.WithdrawalApi(api_client)
-    account_api = gate_api.AccountApi(api_client)
-
-    # 测试 API 连接
-    try:
-        balance = account_api.get_user_balance(currency=currency)
-        print(f"账户 {currency} 余额: {balance.available}")
-    except (ApiException, GateApiException) as e:
-        print(f"连接 API 时出现异常: {e}")
-        return
-
-    # 验证提币地址和数量
-    for address_amount in address_amount_pairs:
-        address, amount = address_amount.split(",")
-        address = address.strip()
-        amount = float(amount.strip())
-        if amount > float(balance.available):
-            print(f"提币数量 {amount} {currency} 超过账户可用余额 {balance.available} {currency}")
-            return
-
-    # 将提现记录写入文件
-    filename = f"withdrawal_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    # 将用户输入保存到文件
+    filename = f"withdrawal_config_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     with open(filename, mode='w', newline='') as csv_file:
-        fieldnames = ['timestamp', 'currency', 'chain', 'address', 'amount', 'status']
+        fieldnames = ['key', 'secret']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
-        print(f"提现记录将写入文件 {filename}")
+        writer.writerow({'key': key, 'secret': secret})
+    print(f"配置信息已保存到文件 {filename}")
 
-    # 执行提币操作
-    for address_amount in address_amount_pairs:
-        address, amount = address_amount.split(",")
-        address = address.strip()
-        amount = float(amount.strip())
+    # 后续提示是否修改
+    while True:
+        chain = input("请输入主链类型 (例如 BTC、ETH、Polygon): ")
+        currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
+        address_amount_pairs = input("请输入提币地址和数量(以逗号分隔,一行一个,例如: \n0x123...,0.1\n0x456...,0.2): ").strip().split("\n")
+        interval = int(input("请输入提币间隔时间(秒): "))
 
-        # 创建提现记录
-        ledger_record = gate_api.LedgerRecord(currency=currency, address=address, amount=amount, chain=chain)
+        # 配置 APIv4 密钥授权
+        configuration = gate_api.Configuration(
+            host="https://api.gateio.ws/api/v4",
+            key=key,
+            secret=secret
+        )
 
+        api_client = gate_api.ApiClient(configuration)
+        api_instance = gate_api.WithdrawalApi(api_client)
+        balance_api = gate_api.BalanceApi(api_client)
+
+        # 测试 API 连接
         try:
-            # 执行提现
-            api_response = api_instance.withdraw(ledger_record)
-            record = {
-                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'currency': currency,
-                'chain': chain,
-                'address': address,
-                'amount': amount,
-                'status': 'Success'
-            }
-            print(f"提现成功, {currency} {amount} 到 {address}: {api_response}")
+            balance = balance_api.list_balances(currency=currency)[0]
+            print(f"账户 {currency} 余额: {balance.available}")
+        except (ApiException, GateApiException) as e:
+            print(f"连接 API 时出现异常: {e}")
+            return
 
-            # 将提现记录写入文件
-            with open(filename, mode='a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-                writer.writerow(record)
+        # 验证提币地址和数量
+        for address_amount in address_amount_pairs:
+            address, amount = address_amount.split(",")
+            address = address.strip()
+            amount = float(amount.strip())
+            if amount > float(balance.available):
+                print(f"提币数量 {amount} {currency} 超过账户可用余额 {balance.available} {currency}")
+                return
 
-        except GateApiException as ex:
-            record = {
-                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'currency': currency,
-                'chain': chain,
-                'address': address,
-                'amount': amount,
-                'status': f"Failed, label: {ex.label}, message: {ex.message}"
-            }
-            print(f"Gate API 异常, 标签: {ex.label}, 消息: {ex.message}")
+        # 将提现记录写入文件
+        filename = f"withdrawal_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        with open(filename, mode='w', newline='') as csv_file:
+            fieldnames = ['timestamp', 'currency', 'chain', 'address', 'amount', 'status']
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+            print(f"提现记录将写入文件 {filename}")
 
-            # 将提现记录写入文件
-            with open(filename, mode='a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-                writer.writerow(record)
+        # 执行提币操作
+        for address_amount in address_amount_pairs:
+            address, amount = address_amount.split(",")
+            address = address.strip()
+            amount = float(amount.strip())
 
-        except ApiException as e:
-            record = {
-                'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'currency': currency,
-                'chain': chain,
-                'address': address,
-                'amount': amount,
-                'status': f"Failed, exception: {e}"
-            }
-            print(f"调用 WithdrawalApi->withdraw 时出现异常: {e}")
+            # 创建提现记录
+            ledger_record = gate_api.LedgerRecord(currency=currency, address=address, amount=amount, chain=chain)
 
-            # 将提现记录写入文件
-            with open(filename, mode='a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-                writer.writerow(record)
+            try:
+                # 执行提现
+                api_response = api_instance.withdraw(ledger_record)
+                record = {
+                    'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'currency': currency,
+                    'chain': chain,
+                    'address': address,
+                    'amount': amount,
+                    'status': 'Success'
+                }
+                print(f"提现成功, {currency} {amount} 到 {address}: {api_response}")
 
-        # 等待下次提现
-        print(f"等待 {interval} 秒后执行下一次提现...")
-        time.sleep(interval)
+                # 将提现记录写入文件
+                with open(filename, mode='a', newline='') as csv_file:
+                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                    writer.writerow(record)
+
+            except GateApiException as ex:
+                record = {
+                    'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'currency': currency,
+                    'chain': chain,
+                    'address': address,
+                    'amount': amount,
+                    'status': f"Failed, label: {ex.label}, message: {ex.message}"
+                }
+                print(f"Gate API 异常, 标签: {ex.label}, 消息: {ex.message}")
+
+                # 将提现记录写入文件
+                with open(filename, mode='a', newline='') as csv_file:
+                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                    writer.writerow(record)
+
+            except ApiException as e:
+                record = {
+                    'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'currency': currency,
+                    'chain': chain,
+                    'address': address,
+                    'amount': amount,
+                    'status': f"Failed, exception: {e}"
+                }
+                print(f"调用 WithdrawalApi->withdraw 时出现异常: {e}")
+
+                # 将提现记录写入文件
+                with open(filename, mode='a', newline='') as csv_file:
+                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                    writer.writerow(record)
+
+            # 等待下次提现
+            print(f"等待 {interval} 秒后执行下一次提现...")
+            time.sleep(interval)
+
+        # 提示是否修改
+        modify = input("是否修改配置信息? (y/n, 默认n) ")
+        if modify.lower() != 'y':
+            break
 
 if __name__ == "__main__":
     main()
