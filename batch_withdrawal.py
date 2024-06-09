@@ -12,7 +12,7 @@ def install_dependency(package):
     try:
         __import__(package)
     except ImportError:
-        print(f"需要安装 {package} 依赖,正在安装...")
+        print("需要安装 {} 依赖,正在安装...".format(package))
         subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", package])
 
 def main():
