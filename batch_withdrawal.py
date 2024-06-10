@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 import time
 from decimal import Decimal
-import requests
 import random
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
@@ -31,6 +30,16 @@ api_secret = os.getenv("API_SECRET")
 if not api_key or not api_secret:
     api_key = input("请输入API_KEY: ")
     api_secret = input("请输入API_SECRET: ")
+
+# 配置 APIv4 密钥认证
+configuration = gate_api.Configuration(
+    host="https://api.gateio.ws/api/v4",
+    key=api_key,
+    secret=api_secret
+)
+
+api_client = gate_api.ApiClient(configuration)
+api_instance = gate_api.WithdrawalApi(api_client)
 
 print(f"请输入主链类型 (例如 BTC、ETH、MATIC): ")
 chain = input().strip()
@@ -94,29 +103,22 @@ while True:
 
 def do_withdrawal(config, address, amount):
     try:
-        # 执行真实的提现操作
-        headers = {
-            'API-KEY': config.api_key,
-            'API-SECRET': config.api_secret
-        }
-        # 将 Decimal 对象转换为浮点数
-        json_data = {'currency': config.currency, 'address': address, 'amount': float(amount), 'chain': config.chain}
-        response = requests.post(f"{config.host}/withdrawal", headers=headers, json=json_data)
-        if response.status_code == 200:
-            transaction_id = response.json()['transaction_id']
-            status = True
-        else:
-            error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误代码: {response.status_code}, 错误信息: {response.text}"
-            logging.error(error_message)
-            print(error_message)
-            transaction_id = None
-            status = False
-        return transaction_id, status
-    except Exception as e:
+        withdrawal_response = api_instance.withdraw(currency=config.currency, address=address, amount=float(amount), chain=config.chain)
+        transaction_id = withdrawal_response.transaction_id
+        status = True
+    except GateApiException as ex:
+        error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误代码: {ex.status}, 错误信息: {ex.body}"
+        logging.error(error_message)
+        print(error_message)
+        transaction_id = None
+        status = False
+    except ApiException as e:
         error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误: {str(e)}"
         logging.error(error_message)
         print(error_message)
-        return None, False
+        transaction_id = None
+        status = False
+    return transaction_id, status
 
 def main():
     config = Config(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay, "https://api.gateio.ws/api/v4")
