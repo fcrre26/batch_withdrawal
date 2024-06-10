@@ -63,13 +63,13 @@ if input().strip().lower() != 'y':
 
 # 让用户输入提现间隔时间
 print(f"\n请输入提现间隔时间(秒,默认为 {interval}):")
-interval = int(input().strip()) or interval
+user_interval = int(input().strip()) or interval
 
 # 再次打印提现信息供用户确认
 print("\n即将执行以下提现操作:")
 print(f"主链: {chain}")
 print(f"币种: {currency}")
-print(f"提现间隔时间: {interval} 秒 (实际会在 0-{interval//2} 秒内随机)")
+print(f"提现间隔时间: {user_interval + random.uniform(10, 30)} 秒 (用户设置时间 + 10-30秒内的随机时间)")
 for address, amount in addresses_and_amounts:
     print(f"地址: {address}, 数量: {amount}")
 
@@ -90,7 +90,7 @@ def do_withdrawal(config, address, amount):
         return None, False
 
 def main():
-    config = Config(api_key, api_secret, chain, currency, interval, retry_count, retry_delay)
+    config = Config(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay)
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
@@ -102,7 +102,7 @@ def main():
         else:
             print(f"提现失败, 地址: {address}, 数量: {amount}")
             failure_count += 1
-        time.sleep(random.uniform(0, interval/2))
+        time.sleep(user_interval + random.uniform(10, 30))
     
     print(f"\n提现总数: {total_addresses}")
     print(f"成功数量: {success_count}")
