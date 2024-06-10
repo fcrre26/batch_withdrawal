@@ -3,7 +3,12 @@ import os
 from dotenv import load_dotenv
 import time
 from decimal import Decimal
+import requests
 
+# 设置日志配置
+logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+# 定义配置类
 class Config:
     def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay):
         self.api_key = api_key
@@ -14,6 +19,7 @@ class Config:
         self.retry_count = retry_count
         self.retry_delay = retry_delay
 
+# 定义提现函数
 def do_withdrawal(config, address, amount):
     try:
         # 使用 config 中的信息进行提现操作
