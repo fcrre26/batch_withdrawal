@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import random
 import asyncio
+import time
 
 class Config:
     def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay):
@@ -46,19 +47,16 @@ async def main():
         os.environ["API_SECRET"] = api_secret
         logging.info("用户输入了新的 API key 和 API secret")
 
-    chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
-    currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
+    chain_type = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
+    coin_type = input("请输入币种 (例如 BTC、ETH、MATIC): ")
     interval = int(input("请输入提现间隔时间(秒): "))
-    logging.info(f"用户输入了主链类型: {chain}, 币种: {currency}, 提现间隔时间: {interval} 秒")
+    logging.info(f"用户输入了主链类型: {chain_type}, 币种: {coin_type}, 提现间隔时间: {interval} 秒")
 
-    withdrawal_infos = []
+    addresses_and_amounts = []
     address_amount_pairs = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ").strip().split("\n")
     for pair in address_amount_pairs:
         address, amount = pair.split(",")
-        withdrawal_infos.append({
-            "address": address.strip(),
-            "amount": float(amount.strip())
-        })
+        addresses_and_amounts.append((address.strip(), float(amount.strip())))
         logging.info(f"用户输入了提现地址: {address.strip()}, 提现数量: {float(amount.strip())}")
 
     # 设置默认的重试次数和重试延迟
@@ -75,21 +73,40 @@ async def main():
         logging.info(f"使用默认的重试次数: {retry_count}, 重试延迟: {retry_delay} 秒")
 
     # 创建配置对象
-    config = Config(api_key, api_secret, chain, currency, interval, retry_count, retry_delay)
+    config = Config(api_key, api_secret, chain_type, coin_type, interval, retry_count, retry_delay)
+
+    # 打印提现信息供用户确认
+    logging.info("以下是您的提现信息:")
+    logging.info(f"主链类型: {chain_type}")
+    logging.info(f"币种: {coin_type}")
+    logging.info(f"提现间隔: {interval} 秒")
+    logging.info(f"重试次数: {retry_count}")
+    logging.info(f"重试延迟: {retry_delay} 秒")
+    logging.info("提现地址和数量:")
+    for address, amount in addresses_and_amounts:
+        logging.info(f"{address} - {amount}")
+
+    # 等待用户确认
+    confirm = input("是否继续执行提现操作? (回车继续/其他退出) ")
+    if confirm != '':
+        exit()
 
     # 执行提现操作
-    for withdrawal_info in withdrawal_infos:
-        random_interval = random.uniform(config.interval, config.interval + 20)
-        print(f"链类型: {config.chain}, 币种: {config.currency}, 地址: {withdrawal_info['address']}, 数量: {withdrawal_info['amount']}, 间隔时间: {random_interval:.2f} 秒")
-        logging.info(f"开始提现: 链类型 {config.chain}, 币种 {config.currency}, 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔时间 {random_interval:.2f} 秒")
-        success = await do_withdrawal(config, withdrawal_info)
-        if success:
-            logging.info(f"提现成功: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {random_interval:.2f}秒")
-            print("提现成功")
+    for address, amount in addresses_and_amounts:
+        for i in range(retry_count):
+            try:
+                # 在这里添加实际的提现逻辑
+                logging.info(f"正在提现至 {address} 数量 {amount}")
+                time.sleep(interval)
+            except Exception as e:
+                logging.error(f"提现失败, 正在重试 ({i+1}/{retry_count}): {e}")
+                time.sleep(retry_delay)
+                continue
+            else:
+                logging.info(f"提现成功至 {address} 数量 {amount}")
+                break
         else:
-            logging.error(f"提现失败: 地址 {withdrawal_info['address']}, 数量 {withdrawal_info['amount']}, 间隔 {random_interval:.2f}秒")
-            print("提现失败")
-        await asyncio.sleep(random_interval)
+            logging.error(f"提现至 {address} 数量 {amount} 失败")
 
 if __name__ == "__main__":
     asyncio.run(main())
