@@ -5,13 +5,15 @@ import time
 from decimal import Decimal
 import requests
 import random
+import gate_api
+from gate_api.exceptions import ApiException, GateApiException
 
 # 设置日志配置
 logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # 定义配置类
 class Config:
-    def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay):
+    def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay, host):
         self.api_key = api_key
         self.api_secret = api_secret
         self.chain = chain
@@ -19,6 +21,7 @@ class Config:
         self.interval = interval
         self.retry_count = retry_count
         self.retry_delay = retry_delay
+        self.host = host
 
 # 获取 API 密钥和密码
 load_dotenv()
@@ -97,8 +100,8 @@ def do_withdrawal(config, address, amount):
             'API-SECRET': config.api_secret
         }
         # 将 Decimal 对象转换为浮点数
-        json_data = {'address': address, 'amount': float(amount)}
-        response = requests.post("https://api.gateio.ws/api/v4/withdrawal", headers=headers, json=json_data)
+        json_data = {'currency': config.currency, 'address': address, 'amount': float(amount), 'chain': config.chain}
+        response = requests.post(f"{config.host}/withdrawal", headers=headers, json=json_data)
         if response.status_code == 200:
             transaction_id = response.json()['transaction_id']
             status = True
@@ -116,7 +119,7 @@ def do_withdrawal(config, address, amount):
         return None, False
 
 def main():
-    config = Config(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay)
+    config = Config(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay, "https://api.gateio.ws/api/v4")
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
