@@ -2,6 +2,7 @@ import logging
 import os
 from dotenv import load_dotenv
 import time
+from decimal import Decimal
 
 class Config:
     def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay):
@@ -51,8 +52,8 @@ def main():
     address_amount_pairs = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ").strip().split("\n")
     for pair in address_amount_pairs:
         address, amount = pair.split(",")
-        addresses_and_amounts.append((address.strip(), float(amount.strip())))
-        logging.info(f"用户输入了提现地址: {address.strip()}, 提现数量: {float(amount.strip())}")
+        addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
+        logging.info(f"用户输入了提现地址: {address.strip()}, 提现数量: {Decimal(amount.strip())}")
 
     # 让用户选择是否手动输入重试次数和重试延迟
     user_input = input("是否需要手动设置重试次数和重试延迟? (y/n) ")
