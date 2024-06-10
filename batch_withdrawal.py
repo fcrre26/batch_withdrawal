@@ -114,4 +114,4 @@ def main():
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
-        print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount
+        print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount}")
