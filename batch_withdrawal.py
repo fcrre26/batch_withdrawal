@@ -96,7 +96,9 @@ def do_withdrawal(config, address, amount):
             'API-KEY': config.api_key,
             'API-SECRET': config.api_secret
         }
-        response = requests.post(f"https://api.example.com/withdrawal", headers=headers, json={'address': address, 'amount': amount})
+        # 将 Decimal 对象转换为浮点数
+        json_data = {'address': address, 'amount': float(amount)}
+        response = requests.post(f"https://api.example.com/withdrawal", headers=headers, json=json_data)
         if response.status_code == 200:
             transaction_id = response.json()['transaction_id']
             status = True
