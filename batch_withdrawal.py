@@ -6,62 +6,18 @@ from decimal import Decimal
 import random
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
-from gate_api.api.account_api import AccountApi
-from gate_api.api.wallet_api import WalletApi
 
 # 设置日志配置
 logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-
-def check_api_connectivity(api_key, api_secret):
-    try:
-        configuration = gate_api.Configuration(
-            host="https://api.gateio.ws/api/v4",
-            key=api_key,
-            secret=api_secret
-        )
-        api_client = gate_api.ApiClient(configuration)
-        account_api = AccountApi(api_client)
-        account_api.get_account()
-        print("API 连通性检测成功!")
-        return True
-    except (GateApiException, ApiException) as e:
-        error_message = f"API 连通性检测失败: {str(e)}"
-        logging.error(error_message)
-        print(error_message)
-        return False
-
-def get_available_balance(api_key, api_secret, currency):
-    try:
-        configuration = gate_api.Configuration(
-            host="https://api.gateio.ws/api/v4",
-            key=api_key,
-            secret=api_secret
-        )
-        api_client = gate_api.ApiClient(configuration)
-        wallet_api = WalletApi(api_client)
-        wallet_info = wallet_api.list_withdrawal_account(currency)
-        available_balance = wallet_info[0].available
-        return available_balance
-    except (GateApiException, ApiException) as e:
-        error_message = f"获取可提现余额失败: {str(e)}"
-        logging.error(error_message)
-        print(error_message)
-        return None
 
 # 获取 API 密钥和密码
 load_dotenv()
 api_key = os.getenv("API_KEY")
 api_secret = os.getenv("API_SECRET")
 
-while True:
-    if not api_key or not api_secret:
-        api_key = input("请输入API_KEY: ")
-        api_secret = input("请输入API_SECRET: ")
-
-    if check_api_connectivity(api_key, api_secret):
-        break
-    else:
-        print("请检查 API_KEY 和 API_SECRET 是否正确,并重新输入。")
+if not api_key or not api_secret:
+    api_key = input("请输入API_KEY: ")
+    api_secret = input("请输入API_SECRET: ")
 
 # Configure APIv4 key authorization
 configuration = gate_api.Configuration(
@@ -75,14 +31,6 @@ api_instance = gate_api.WithdrawalApi(api_client)
 
 chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
 currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
-
-# 获取可提现余额
-available_balance = get_available_balance(api_key, api_secret, currency)
-if available_balance is not None:
-    print(f"当前 {currency} 的可提现余额为: {available_balance}")
-else:
-    print(f"无法获取 {currency} 的可提现余额,请检查后重试。")
-    exit()
 
 retry_count = 2
 retry_delay = 10
