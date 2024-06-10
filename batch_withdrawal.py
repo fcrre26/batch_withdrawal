@@ -101,26 +101,20 @@ def main():
         retry_delay=retry_delay
     )
 
-    processed_addresses = 0
+    successful_withdrawals = 0
 
     for address, amount in addresses_and_amounts:
-        for i in range(retry_count):
-            try:
-                success = do_withdrawal(config, address, amount)
-                if success:
-                    logging.info(f"提现成功: {address} - {amount}")
-                    processed_addresses += 1
-                    random_interval = random.uniform(0, interval / 2)
-                    print(f"已处理 {processed_addresses}/{total_addresses} 个提现地址, 下次提现将在 {random_interval:.2f} 秒后进行")
-                    time.sleep(random_interval)
-                    break
-                else:
-                    time.sleep(config.retry_delay)
-            except Exception as e:
-                logging.error(f"提现出错: {address} - {amount} - {type(e).__name__}: {str(e)}")
-                time.sleep(config.retry_delay)
+        print(f"正在处理地址 {address}...")
+        time.sleep(random.uniform(0, interval / 2))
+        success = do_withdrawal(config, address, amount)
+        if success:
+            print(f"提现 {amount} {currency} 到地址 {address}...成功!")
+            successful_withdrawals += 1
+        else:
+            print(f"提现 {amount} {currency} 到地址 {address}...失败!")
+        print(f"已完成 {successful_withdrawals}/{total_addresses} 个提现操作")
 
-    print(f"提现操作已完成,共处理 {processed_addresses}/{total_addresses} 个地址")
+    print(f"提现操作已完成,共处理 {successful_withdrawals}/{total_addresses} 个地址")
 
 if __name__ == "__main__":
     main()
