@@ -10,18 +10,6 @@ from gate_api.exceptions import ApiException, GateApiException
 # 设置日志配置
 logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-# 定义配置类
-class Config:
-    def __init__(self, api_key, api_secret, chain, currency, interval, retry_count, retry_delay, host):
-        self.api_key = api_key
-        self.api_secret = api_secret
-        self.chain = chain
-        self.currency = currency
-        self.interval = interval
-        self.retry_count = retry_count
-        self.retry_delay = retry_delay
-        self.host = host
-
 # 获取 API 密钥和密码
 load_dotenv()
 api_key = os.getenv("API_KEY")
@@ -31,7 +19,7 @@ if not api_key or not api_secret:
     api_key = input("请输入API_KEY: ")
     api_secret = input("请输入API_SECRET: ")
 
-# 配置 APIv4 密钥认证
+# Configure APIv4 key authorization
 configuration = gate_api.Configuration(
     host="https://api.gateio.ws/api/v4",
     key=api_key,
@@ -41,10 +29,8 @@ configuration = gate_api.Configuration(
 api_client = gate_api.ApiClient(configuration)
 api_instance = gate_api.WithdrawalApi(api_client)
 
-print(f"请输入主链类型 (例如 BTC、ETH、MATIC): ")
-chain = input().strip()
-print(f"请输入币种 (例如 BTC、ETH、MATIC): ")
-currency = input().strip()
+chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
+currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
 
 retry_count = 2
 retry_delay = 10
@@ -79,31 +65,12 @@ while True:
     else:
         print("输入无效，请重新输入。")
 
-# 让用户输入提现间隔时间
-print(f"\n请输入提现间隔时间(秒,默认为 {interval}):")
-user_interval = int(input().strip()) or interval
-
-# 再次打印提现信息供用户确认
-print("\n即将执行以下提现操作:")
-print(f"主链: {chain}")
-print(f"币种: {currency}")
-for address, amount in addresses_and_amounts:
-    print(f"地址: {address}, 数量: {amount}")
-
-# 等待用户最终确认
-while True:
-    confirm = input("\n确认无误后输入 'y' 开始执行, 或者输入 'n' 取消: ")
-    if confirm.strip().lower() == 'y':
-        break
-    elif confirm.strip().lower() == 'n':
-        print("取消提现操作。")
-        exit()
-    else:
-        print("输入无效，请重新输入。")
+user_interval = int(input(f"\n请输入提现间隔时间(秒,默认为 {interval}): ")) or interval
 
 def do_withdrawal(config, address, amount):
     try:
-        withdrawal_response = api_instance.withdraw(currency=config.currency, address=address, amount=float(amount), chain=config.chain)
+        ledger_record = gate_api.LedgerRecord(currency=config.currency, address=address, amount=float(amount), chain=config.chain)
+        withdrawal_response = api_instance.withdraw(ledger_record)
         transaction_id = withdrawal_response.transaction_id
         status = True
     except GateApiException as ex:
@@ -121,7 +88,7 @@ def do_withdrawal(config, address, amount):
     return transaction_id, status
 
 def main():
-    config = Config(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay, "https://api.gateio.ws/api/v4")
+    config = gate_api.Configuration(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay, "https://api.gateio.ws/api/v4")
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
