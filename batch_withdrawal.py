@@ -41,7 +41,7 @@ retry_delay = 10
 
 addresses_and_amounts = []
 while True:
-    address_and_amount = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4b84210a4D44ee2792c03bF76C10c55Cdc71c599,9.77873408780724\n0xbCd519dB657Dbd3A1Fb63C03C51fA86760B3C988,9.81506547392674\n): ")
+    address_and_amount = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
     if not address_and_amount:
         break
     for line in address_and_amount.splitlines():
