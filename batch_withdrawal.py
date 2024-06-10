@@ -38,13 +38,13 @@ retry_count = 2
 retry_delay = 10
 
 addresses_and_amounts = []
+print("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
 while True:
-    address_and_amount = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
+    address_and_amount = input()
     if not address_and_amount:
         break
-    for line in address_and_amount.splitlines():
-        address, amount = line.split(',')
-        addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
+    address, amount = address_and_amount.split(',')
+    addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
 
 total_addresses = len(addresses_and_amounts)
 
