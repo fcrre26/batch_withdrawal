@@ -7,7 +7,7 @@ import random
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
 from gate_api.api.account_api import AccountApi
-from gate_api.api.currency_api import CurrencyApi
+from gate_api.api.wallet_api import WalletApi
 
 # 设置日志配置
 logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -38,9 +38,9 @@ def get_available_balance(api_key, api_secret, currency):
             secret=api_secret
         )
         api_client = gate_api.ApiClient(configuration)
-        currency_api = CurrencyApi(api_client)
-        currency_info = currency_api.get_currency(currency)
-        available_balance = currency_info.available
+        wallet_api = WalletApi(api_client)
+        wallet_info = wallet_api.list_withdrawal_account(currency)
+        available_balance = wallet_info[0].available
         return available_balance
     except (GateApiException, ApiException) as e:
         error_message = f"获取可提现余额失败: {str(e)}"
