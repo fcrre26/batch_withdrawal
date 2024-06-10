@@ -115,3 +115,21 @@ def main():
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
         print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount}")
+        logging.info(f"Processing address {address} with amount {amount}")
+        # 生成随机间隔
+        random_delay = random.randint(10, 30)
+        wait_time = user_interval + random_delay
+        print(f"等待 {wait_time} 秒后提现...")
+        logging.info(f"Waiting {wait_time} seconds before withdrawal...")
+        time.sleep(wait_time)
+        transaction_id, status = do_withdrawal(config, address, amount)
+        if status:
+            print(f"提现成功! 交易ID: {transaction_id}")
+            success_count += 1
+        else:
+            print(f"提现失败...")
+            failure_count += 1
+    print(f"提现完成, 成功 {success_count} 次, 失败 {failure_count} 次。")
+
+if __name__ == "__main__":
+    main()
