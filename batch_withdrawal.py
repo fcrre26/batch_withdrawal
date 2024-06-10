@@ -69,7 +69,6 @@ user_interval = int(input().strip()) or interval
 print("\n即将执行以下提现操作:")
 print(f"主链: {chain}")
 print(f"币种: {currency}")
-print(f"提现间隔时间: {user_interval + random.uniform(10, 30)} 秒 (用户设置时间 + 10-30秒内的随机时间)")
 for address, amount in addresses_and_amounts:
     print(f"地址: {address}, 数量: {amount}")
 
@@ -80,10 +79,19 @@ if input().strip().lower() != 'y':
 
 def do_withdrawal(config, address, amount):
     try:
-        # 执行提现操作的代码
-        # 假设返回一个 transaction_id 和一个 status 标志
-        transaction_id = "0x123456789abcdef"
-        status = True
+        # 执行真实的提现操作
+        headers = {
+            'API-KEY': config.api_key,
+            'API-SECRET': config.api_secret
+        }
+        response = requests.post(f"https://api.example.com/withdrawal", headers=headers, json={'address': address, 'amount': amount})
+        if response.status_code == 200:
+            transaction_id = response.json()['transaction_id']
+            status = True
+        else:
+            logging.error(f"提现失败: 地址 {address}, 数量 {amount}, 错误: {response.text}")
+            transaction_id = None
+            status = False
         return transaction_id, status
     except Exception as e:
         logging.error(f"提现失败: 地址 {address}, 数量 {amount}, 错误: {str(e)}")
@@ -95,18 +103,11 @@ def main():
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
         print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount}")
-        transaction_id, status = do_withdrawal(config, address, amount)
-        if status:
-            print(f"提现成功, 交易ID: {transaction_id}")
-            success_count += 1
-        else:
-            print(f"提现失败, 地址: {address}, 数量: {amount}")
-            failure_count += 1
-        time.sleep(user_interval + random.uniform(10, 30))
-    
-    print(f"\n提现总数: {total_addresses}")
-    print(f"成功数量: {success_count}")
-    print(f"失败数量: {failure_count}")
-
-if __name__ == "__main__":
-    main()
+        logging.info(f"Processing address {address} with amount {amount}")
+        # 生成随机间隔
+        random_delay = random.randint(10, 30)
+        wait_time = user_interval + random_delay
+        print(f"等待 {wait_time} 秒后提现...")
+        logging.info(f"Waiting {wait_time} seconds before withdrawal...")
+        time.sleep(wait_time)
+        transaction_id, status = do_withdrawal
