@@ -101,12 +101,16 @@ def do_withdrawal(config, address, amount):
             transaction_id = response.json()['transaction_id']
             status = True
         else:
-            logging.error(f"提现失败: 地址 {address}, 数量 {amount}, 错误: {response.text}")
+            error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误代码: {response.status_code}, 错误信息: {response.text}"
+            logging.error(error_message)
+            print(error_message)
             transaction_id = None
             status = False
         return transaction_id, status
     except Exception as e:
-        logging.error(f"提现失败: 地址 {address}, 数量 {amount}, 错误: {str(e)}")
+        error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误: {str(e)}"
+        logging.error(error_message)
+        print(error_message)
         return None, False
 
 def main():
