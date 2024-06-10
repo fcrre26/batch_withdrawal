@@ -6,6 +6,7 @@ from decimal import Decimal
 import random
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
+from gate_api.api.wallet_api import WalletApi
 
 # 设置日志配置
 logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -18,8 +19,8 @@ def check_api_connectivity(api_key, api_secret):
             secret=api_secret
         )
         api_client = gate_api.ApiClient(configuration)
-        api_instance = gate_api.WithdrawalApi(api_client)
-        api_instance.list_withdrawals(currency="USDT", status="8", limit=1)
+        wallet_api = WalletApi(api_client)
+        wallet_api.list_balances()
         print("API 连通性检测成功!")
         return True
     except (GateApiException, ApiException) as e:
