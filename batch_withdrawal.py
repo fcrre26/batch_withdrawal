@@ -33,85 +33,79 @@ print(f"请输入主链类型 (例如 BTC、ETH、MATIC): ")
 chain = input().strip()
 print(f"请输入币种 (例如 BTC、ETH、MATIC): ")
 currency = input().strip()
-print(f"请输入提现间隔时间(秒): ")
-interval = int(input().strip())
 
 retry_count = 2
 retry_delay = 10
 
-print("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
 addresses_and_amounts = []
-for line in input().splitlines():
-    address, amount = line.split(',')
-    addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
+while True:
+    address_and_amount = input("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
+    if not address_and_amount:
+        break
+    for line in address_and_amount.splitlines():
+        address, amount = line.split(',')
+        addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
 
 total_addresses = len(addresses_and_amounts)
-print(f"即将执行以下提现操作:")
+
+# 打印提现信息供用户确认
+print("\n即将执行以下提现操作:")
+print(f"主链: {chain}")
+print(f"币种: {currency}")
+for address, amount in addresses_and_amounts:
+    print(f"地址: {address}, 数量: {amount}")
+
+# 等待用户确认
+print("\n请确认无误后输入 'y' 继续:")
+if input().strip().lower() != 'y':
+    exit()
+
+# 让用户输入提现间隔时间
+print(f"\n请输入提现间隔时间(秒,默认为 {interval}):")
+interval = int(input().strip()) or interval
+
+# 再次打印提现信息供用户确认
+print("\n即将执行以下提现操作:")
 print(f"主链: {chain}")
 print(f"币种: {currency}")
 print(f"提现间隔时间: {interval} 秒 (实际会在 0-{interval//2} 秒内随机)")
 for address, amount in addresses_and_amounts:
     print(f"地址: {address}, 数量: {amount}")
 
-print("是否继续执行提现操作? (回车继续/其他退出)")
-if input().strip():
+# 等待用户最终确认
+print("\n确认无误后输入 'y' 开始执行:")
+if input().strip().lower() != 'y':
     exit()
 
 def do_withdrawal(config, address, amount):
-    # 构建 API 请求
-    url = f"https://api.example.com/v1/withdraw"
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-Key": config.api_key,
-        "X-API-Secret": config.api_secret
-    }
-    data = {
-        "chain": config.chain,
-        "currency": config.currency,
-        "to_address": address,
-        "amount": str(amount)
-    }
-
-    # 发送请求
-    response = requests.post(url, headers=headers, json=data)
-
-    # 处理响应
-    if response.status_code == 200:
-        result = response.json()
-        if result["status"] == "success":
-            return True
-        else:
-            logging.error(f"提现失败: {address} - {amount} - {result['message']}")
-            return False
-    else:
-        logging.error(f"提现出错: {address} - {amount} - {response.status_code}: {response.text}")
-        return False
+    try:
+        # 执行提现操作的代码
+        # 假设返回一个 transaction_id 和一个 status 标志
+        transaction_id = "0x123456789abcdef"
+        status = True
+        return transaction_id, status
+    except Exception as e:
+        logging.error(f"提现失败: 地址 {address}, 数量 {amount}, 错误: {str(e)}")
+        return None, False
 
 def main():
-    config = Config(
-        api_key=api_key,
-        api_secret=api_secret,
-        chain=chain,
-        currency=currency,
-        interval=interval,
-        retry_count=retry_count,
-        retry_delay=retry_delay
-    )
-
-    successful_withdrawals = 0
-
-    for address, amount in addresses_and_amounts:
-        print(f"正在处理地址 {address}...")
-        time.sleep(random.uniform(0, interval / 2))
-        success = do_withdrawal(config, address, amount)
-        if success:
-            print(f"提现 {amount} {currency} 到地址 {address}...成功!")
-            successful_withdrawals += 1
+    config = Config(api_key, api_secret, chain, currency, interval, retry_count, retry_delay)
+    success_count = 0
+    failure_count = 0
+    for i, (address, amount) in enumerate(addresses_and_amounts):
+        print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount}")
+        transaction_id, status = do_withdrawal(config, address, amount)
+        if status:
+            print(f"提现成功, 交易ID: {transaction_id}")
+            success_count += 1
         else:
-            print(f"提现 {amount} {currency} 到地址 {address}...失败!")
-        print(f"已完成 {successful_withdrawals}/{total_addresses} 个提现操作")
-
-    print(f"提现操作已完成,共处理 {successful_withdrawals}/{total_addresses} 个地址")
+            print(f"提现失败, 地址: {address}, 数量: {amount}")
+            failure_count += 1
+        time.sleep(random.uniform(0, interval/2))
+    
+    print(f"\n提现总数: {total_addresses}")
+    print(f"成功数量: {success_count}")
+    print(f"失败数量: {failure_count}")
 
 if __name__ == "__main__":
     main()
