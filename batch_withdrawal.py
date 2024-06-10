@@ -36,6 +36,7 @@ currency = input().strip()
 
 retry_count = 2
 retry_delay = 10
+interval = 10  # 默认10秒
 
 addresses_and_amounts = []
 print("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
