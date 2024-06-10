@@ -67,9 +67,9 @@ while True:
 
 user_interval = int(input(f"\n请输入提现间隔时间(秒,默认为 {interval}): ")) or interval
 
-def do_withdrawal(config, address, amount):
+def do_withdrawal(address, amount, chain, currency):
     try:
-        ledger_record = gate_api.LedgerRecord(currency=config.currency, address=address, amount=float(amount), chain=config.chain)
+        ledger_record = gate_api.LedgerRecord(currency=currency, address=address, amount=float(amount), chain=chain)
         withdrawal_response = api_instance.withdraw(ledger_record)
         transaction_id = withdrawal_response.transaction_id
         status = True
@@ -99,7 +99,7 @@ def main():
         print(f"等待 {wait_time} 秒后提现...")
         logging.info(f"Waiting {wait_time} seconds before withdrawal...")
         time.sleep(wait_time)
-        transaction_id, status = do_withdrawal(configuration, address, amount)
+        transaction_id, status = do_withdrawal(address, amount, chain, currency)
         if status:
             print(f"提现成功! 交易ID: {transaction_id}")
             success_count += 1
