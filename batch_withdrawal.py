@@ -1,8 +1,6 @@
 import logging
 import os
 from dotenv import load_dotenv
-import random
-import asyncio
 import time
 
 class Config:
@@ -15,10 +13,7 @@ class Config:
         self.retry_count = retry_count
         self.retry_delay = retry_delay
 
-async def do_withdrawal(config, withdrawal_info):
-    # 实现提现逻辑
-    # 这里需要根据您使用的具体API进行实现
-    # 示例代码如下:
+def do_withdrawal(config, withdrawal_info):
     try:
         # 使用 config 和 withdrawal_info 进行提现操作
         # 如果提现成功,返回 True
@@ -28,7 +23,7 @@ async def do_withdrawal(config, withdrawal_info):
         logging.error(f"提现失败: {e}")
         return False
 
-async def main():
+def main():
     # 设置日志配置
     logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -93,20 +88,22 @@ async def main():
 
     # 执行提现操作
     for address, amount in addresses_and_amounts:
-        for i in range(retry_count):
+        for i in range(config.retry_count):
             try:
-                # 在这里添加实际的提现逻辑
                 logging.info(f"正在提现至 {address} 数量 {amount}")
-                time.sleep(interval)
+                if do_withdrawal(config, (address, amount)):
+                    logging.info(f"提现成功至 {address} 数量 {amount}")
+                    time.sleep(config.interval)
+                    break
+                else:
+                    logging.error(f"提现失败, 正在重试 ({i+1}/{config.retry_count})")
+                    time.sleep(config.retry_delay)
             except Exception as e:
-                logging.error(f"提现失败, 正在重试 ({i+1}/{retry_count}): {e}")
-                time.sleep(retry_delay)
+                logging.error(f"提现失败, 正在重试 ({i+1}/{config.retry_count}): {e}")
+                time.sleep(config.retry_delay)
                 continue
-            else:
-                logging.info(f"提现成功至 {address} 数量 {amount}")
-                break
         else:
             logging.error(f"提现至 {address} 数量 {amount} 失败")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
