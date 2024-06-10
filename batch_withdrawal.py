@@ -13,11 +13,11 @@ class Config:
         self.retry_count = retry_count
         self.retry_delay = retry_delay
 
-def do_withdrawal(config, withdrawal_info):
+def do_withdrawal(config, address, amount):
     try:
-        # 使用 config 和 withdrawal_info 进行提现操作
-        # 如果提现成功,返回 True
-        # 否则, 返回 False
+        # 使用 config 中的信息进行提现操作
+        # 这里需要您实现具体的提现逻辑,比如调用第三方 API
+        print(f"正在提现 {amount} {config.currency} 至地址 {address}")
         return True
     except Exception as e:
         logging.error(f"提现失败: {e}")
@@ -54,10 +54,6 @@ def main():
         addresses_and_amounts.append((address.strip(), float(amount.strip())))
         logging.info(f"用户输入了提现地址: {address.strip()}, 提现数量: {float(amount.strip())}")
 
-    # 设置默认的重试次数和重试延迟
-    retry_count = 3
-    retry_delay = 10
-
     # 让用户选择是否手动输入重试次数和重试延迟
     user_input = input("是否需要手动设置重试次数和重试延迟? (y/n) ")
     if user_input.lower() == 'y':
@@ -65,6 +61,8 @@ def main():
         retry_delay = int(input("请输入重试延迟(秒): "))
         logging.info(f"用户设置了重试次数: {retry_count}, 重试延迟: {retry_delay} 秒")
     else:
+        retry_count = 3
+        retry_delay = 10
         logging.info(f"使用默认的重试次数: {retry_count}, 重试延迟: {retry_delay} 秒")
 
     # 创建配置对象
@@ -90,8 +88,7 @@ def main():
     for address, amount in addresses_and_amounts:
         for i in range(config.retry_count):
             try:
-                logging.info(f"正在提现至 {address} 数量 {amount}")
-                if do_withdrawal(config, (address, amount)):
+                if do_withdrawal(config, address, amount):
                     logging.info(f"提现成功至 {address} 数量 {amount}")
                     time.sleep(config.interval)
                     break
