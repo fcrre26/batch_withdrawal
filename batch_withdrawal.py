@@ -6,28 +6,66 @@ from decimal import Decimal
 import random
 import gate_api
 from gate_api.exceptions import ApiException, GateApiException
-from gate_api.api.account_api import AccountApi
 
 # 设置日志配置
 logging.basicConfig(filename='batch_withdrawal.log', level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-def check_api_connectivity(api_key, api_secret):
-    try:
-        configuration = gate_api.Configuration(
-            host="https://api.gateio.ws/api/v4",
-            key=api_key,
-            secret=api_secret
-        )
-        api_client = gate_api.ApiClient(configuration)
-        account_api = AccountApi(api_client)
-        account_api.get_account()
-        print("API 连通性检测成功!")
-        return True
-    except (GateApiException, ApiException) as e:
-        error_message = f"API 连通性检测失败: {str(e)}"
-        logging.error(error_message)
-        print(error_message)
-        return False
+# 获取 API 密钥和密码
+load_dotenv()
+api_key = os.getenv("API_KEY")
+api_secret = os.getenv("API_SECRET")
+
+if not api_key or not api_secret:
+    api_key = input("请输入API_KEY: ")
+    api_secret = input("请输入API_SECRET: ")
+
+# Configure APIv4 key authorization
+configuration = gate_api.Configuration(
+    host="https://api.gateio.ws/api/v4",
+    key=api_key,
+    secret=api_secret
+)
+
+api_client = gate_api.ApiClient(configuration)
+api_instance = gate_api.WithdrawalApi(api_client)
+
+chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
+currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
+
+retry_count = 2
+retry_delay = 10
+interval = 10  # 默认10秒
+
+addresses_and_amounts = []
+print("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
+while True:
+    address_and_amount = input()
+    if not address_and_amount:
+        break
+    address, amount = address_and_amount.split(',')
+    addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
+
+total_addresses = len(addresses_and_amounts)
+
+# 打印提现信息供用户确认
+print("\n即将执行以下提现操作:")
+print(f"主链: {chain}")
+print(f"币种: {currency}")
+for address, amount in addresses_and_amounts:
+    print(f"地址: {address}, 数量: {amount}")
+
+# 等待用户确认
+while True:
+    confirm = input("\n请确认无误后输入 'y' 继续, 或者输入 'n' 取消: ")
+    if confirm.strip().lower() == 'y':
+        break
+    elif confirm.strip().lower() == 'n':
+        print("取消提现操作。")
+        exit()
+    else:
+        print("输入无效，请重新输入。")
+
+user_interval = int(input(f"\n请输入提现间隔时间(秒,默认为 {interval}): ")) or interval
 
 def do_withdrawal(address, amount, chain, currency):
     try:
@@ -36,18 +74,11 @@ def do_withdrawal(address, amount, chain, currency):
         transaction_id = withdrawal_response.transaction_id
         status = True
     except GateApiException as ex:
-        if ex.status == 400 and "Error: You don't have enough balance." in ex.body:
-            error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误信息: 余额不足"
-            logging.error(error_message)
-            print(error_message)
-            transaction_id = None
-            status = False
-        else:
-            error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误代码: {ex.status}, 错误信息: {ex.body}"
-            logging.error(error_message)
-            print(error_message)
-            transaction_id = None
-            status = False
+        error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误代码: {ex.status}, 错误信息: {ex.body}"
+        logging.error(error_message)
+        print(error_message)
+        transaction_id = None
+        status = False
     except ApiException as e:
         error_message = f"提现失败: 地址 {address}, 数量 {amount}, 错误: {str(e)}"
         logging.error(error_message)
@@ -57,66 +88,6 @@ def do_withdrawal(address, amount, chain, currency):
     return transaction_id, status
 
 def main():
-    while True:
-        api_key = os.getenv("API_KEY")
-        api_secret = os.getenv("API_SECRET")
-
-        if not api_key or not api_secret:
-            api_key = input("请输入API_KEY: ")
-            api_secret = input("请输入API_SECRET: ")
-
-        if check_api_connectivity(api_key, api_secret):
-            break
-        else:
-            print("请检查 API_KEY 和 API_SECRET 是否正确,并重新输入。")
-
-    configuration = gate_api.Configuration(
-        host="https://api.gateio.ws/api/v4",
-        key=api_key,
-        secret=api_secret
-    )
-
-    api_client = gate_api.ApiClient(configuration)
-    api_instance = gate_api.WithdrawalApi(api_client)
-
-    chain = input("请输入主链类型 (例如 BTC、ETH、MATIC): ")
-    currency = input("请输入币种 (例如 BTC、ETH、MATIC): ")
-
-    retry_count = 2
-    retry_delay = 10
-    interval = 10  # 默认10秒
-
-    addresses_and_amounts = []
-    print("请输入提现地址和数量(以逗号分隔,一行一个,例如: \n0x4,9.7\n0x,9.2): ")
-    while True:
-        address_and_amount = input()
-        if not address_and_amount:
-            break
-        address, amount = address_and_amount.split(',')
-        addresses_and_amounts.append((address.strip(), Decimal(amount.strip())))
-
-    total_addresses = len(addresses_and_amounts)
-
-    # 打印提现信息供用户确认
-    print("\n即将执行以下提现操作:")
-    print(f"主链: {chain}")
-    print(f"币种: {currency}")
-    for address, amount in addresses_and_amounts:
-        print(f"地址: {address}, 数量: {amount}")
-
-    # 等待用户确认
-    while True:
-        confirm = input("\n请确认无误后输入 'y' 继续, 或者输入 'n' 取消: ")
-        if confirm.strip().lower() == 'y':
-            break
-        elif confirm.strip().lower() == 'n':
-            print("取消提现操作。")
-            exit()
-        else:
-            print("输入无效，请重新输入。")
-
-    user_interval = int(input(f"\n请输入提现间隔时间(秒,默认为 {interval}): ")) or interval
-
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
