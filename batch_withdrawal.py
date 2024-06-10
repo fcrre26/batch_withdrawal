@@ -57,9 +57,15 @@ for address, amount in addresses_and_amounts:
     print(f"地址: {address}, 数量: {amount}")
 
 # 等待用户确认
-print("\n请确认无误后输入 'y' 继续:")
-if input().strip().lower() != 'y':
-    exit()
+while True:
+    confirm = input("\n请确认无误后输入 'y' 继续, 或者输入 'n' 取消: ")
+    if confirm.strip().lower() == 'y':
+        break
+    elif confirm.strip().lower() == 'n':
+        print("取消提现操作。")
+        exit()
+    else:
+        print("输入无效，请重新输入。")
 
 # 让用户输入提现间隔时间
 print(f"\n请输入提现间隔时间(秒,默认为 {interval}):")
@@ -73,9 +79,15 @@ for address, amount in addresses_and_amounts:
     print(f"地址: {address}, 数量: {amount}")
 
 # 等待用户最终确认
-print("\n确认无误后输入 'y' 开始执行:")
-if input().strip().lower() != 'y':
-    exit()
+while True:
+    confirm = input("\n确认无误后输入 'y' 开始执行, 或者输入 'n' 取消: ")
+    if confirm.strip().lower() == 'y':
+        break
+    elif confirm.strip().lower() == 'n':
+        print("取消提现操作。")
+        exit()
+    else:
+        print("输入无效，请重新输入。")
 
 def do_withdrawal(config, address, amount):
     try:
@@ -102,12 +114,4 @@ def main():
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
-        print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount}")
-        logging.info(f"Processing address {address} with amount {amount}")
-        # 生成随机间隔
-        random_delay = random.randint(10, 30)
-        wait_time = user_interval + random_delay
-        print(f"等待 {wait_time} 秒后提现...")
-        logging.info(f"Waiting {wait_time} seconds before withdrawal...")
-        time.sleep(wait_time)
-        transaction_id, status = do_withdrawal
+        print(f"[{i+1}/{total_addresses}] 正在处理 地址: {address}, 数量: {amount
