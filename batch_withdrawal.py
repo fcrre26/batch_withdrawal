@@ -88,7 +88,6 @@ def do_withdrawal(config, address, amount):
     return transaction_id, status
 
 def main():
-    config = gate_api.Configuration(api_key, api_secret, chain, currency, user_interval, retry_count, retry_delay, "https://api.gateio.ws/api/v4")
     success_count = 0
     failure_count = 0
     for i, (address, amount) in enumerate(addresses_and_amounts):
@@ -100,7 +99,7 @@ def main():
         print(f"等待 {wait_time} 秒后提现...")
         logging.info(f"Waiting {wait_time} seconds before withdrawal...")
         time.sleep(wait_time)
-        transaction_id, status = do_withdrawal(config, address, amount)
+        transaction_id, status = do_withdrawal(configuration, address, amount)
         if status:
             print(f"提现成功! 交易ID: {transaction_id}")
             success_count += 1
