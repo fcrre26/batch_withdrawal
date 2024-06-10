@@ -98,7 +98,7 @@ def do_withdrawal(config, address, amount):
         }
         # 将 Decimal 对象转换为浮点数
         json_data = {'address': address, 'amount': float(amount)}
-        response = requests.post(f"https://api.example.com/withdrawal", headers=headers, json=json_data)
+        response = requests.post("https://api.gateio.ws/api/v4/withdrawal", headers=headers, json=json_data)
         if response.status_code == 200:
             transaction_id = response.json()['transaction_id']
             status = True
